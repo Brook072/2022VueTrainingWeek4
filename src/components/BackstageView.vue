@@ -2,8 +2,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import DeleteModalVue from "./DeleteModal.vue";
-import EditProductModalVue from "./EditProductModal.vue";
-import AddProductModalVue from "./AddProductModal.vue";
+import ProductModalVue from "./ProductModal.vue";
 const apiUrl = "https://vue3-course-api.hexschool.io";
 const token = localStorage.getItem("token");
 const goodsData = ref("");
@@ -46,7 +45,7 @@ goodsDataGet();
       <button
         @click.prevent="modalTargetProcess('')"
         data-bs-toggle="modal"
-        data-bs-target="#addProductModal"
+        data-bs-target="#ProductModal"
         class="btn btn-primary"
       >
         建立新的產品
@@ -78,7 +77,7 @@ goodsDataGet();
               <button
                 @click.prevent="modalTargetProcess(item.id)"
                 data-bs-toggle="modal"
-                data-bs-target="#editProductModal"
+                data-bs-target="#ProductModal"
                 type="button"
                 class="btn btn-outline-primary btn-sm"
               >
@@ -99,8 +98,7 @@ goodsDataGet();
       </tbody>
     </table>
   </div>
-  <AddProductModalVue @send-data-get="goodsDataGet()" />
-  <EditProductModalVue :modalTarget="modalTarget" />
+  <ProductModalVue :modalTarget="modalTarget" @send-data-get="goodsDataGet()" />
   <DeleteModalVue :modalTarget="modalTarget" @send-data-get="goodsDataGet()" />
 </template>
 

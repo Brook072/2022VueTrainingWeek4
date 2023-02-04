@@ -4,14 +4,20 @@ import { Modal } from "bootstrap";
 import axios from "axios";
 const props = defineProps(["modalTarget"]);
 const modalOriginData = toRef(props, "modalTarget");
-const modalTarget = ref("");
 const productModalBS = ref("");
 const productModalDOM = ref("");
+const modalTarget = ref({});
 const imgShowed = ref("");
 const imageOnChange = ref("");
+const imgUploaded = ref("");
 const apiUrl = "https://vue3-course-api.hexschool.io";
 const token = localStorage.getItem("token");
 const emit = defineEmits(["sendDataGet"]);
+
+function changeImage(img) {
+  imageOnChange.value = img;
+  imgShowed.value = img;
+}
 
 function editGoodsPut() {
   axios
@@ -59,11 +65,11 @@ function addImage() {
 
 function editImage() {
   if (imageOnChange.value === modalTarget.value.imageUrl) {
-    modalTarget.value.imageUrl = imgShowed;
+    modalTarget.value.imageUrl = imgShowed.value;
     imageOnChange.value = "";
   } else {
     let key = modalTarget.value.imagesUrl.indexOf(imageOnChange.value);
-    modalTarget.value.imagesUrl[key] = imgShowed;
+    modalTarget.value.imagesUrl[key] = imgShowed.value;
     imageOnChange.value = "";
   }
 }
@@ -79,24 +85,71 @@ function deleteImage() {
     imgShowed.value = "";
   }
 }
+
+function uploadImage() {
+  let imageUploaded = new FormData();
+  imageUploaded.append(
+    "file-to-upload",
+    document.getElementById("imageUpload").files[0]
+  );
+
+  axios
+    .post(`${apiUrl}/v2/api/thisisastore/admin/upload`, imageUploaded, {
+      headers: {
+        Authorization: token,
+      },
+    })
+    .then((res) => {
+      alert("圖片上傳成功");
+      imgUploaded.value = res.data.imageUrl;
+      changeImage(imgUploaded.value);
+      addImage();
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+}
+
+function addGoodsPost() {
+  axios
+    .post(
+      `${apiUrl}/v2/api/thisisastore/admin/product`,
+      { data: modalTarget.value },
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    )
+    .then((res) => {
+      alert(res.data.message);
+      emit("sendDataGet");
+      productModalBS.value.hide();
+    })
+    .catch((err) => {
+      alert(err.data.message);
+    });
+}
+
 onMounted(() => {
-  productModalBS.value = new Modal(document.getElementById("editProductModal"));
-  productModalDOM.value = document.getElementById("editProductModal");
+  productModalBS.value = new Modal(document.getElementById("ProductModal"));
+  productModalDOM.value = document.getElementById("ProductModal");
   productModalDOM.value.addEventListener("hidden.bs.modal", () => {
     modalTarget.value = {};
+    imgShowed.value = "";
   });
 });
 watch(modalOriginData, () => {
   modalTarget.value = modalOriginData.value;
 });
 
-watch(modalTarget, () => {
-  imgShowed.value = modalTarget.value.imageUrl;
-});
+// watch(modalTarget, () => {
+//   imgShowed.value = modalTarget.value.imageUrl;
+// });
 </script>
 <template>
   <div
-    id="editProductModal"
+    id="ProductModal"
     class="modal fade"
     tabindex="-1"
     aria-labelledby="productModalLabel"
@@ -106,7 +159,7 @@ watch(modalTarget, () => {
       <div class="modal-content border-0">
         <div class="modal-header bg-dark text-white">
           <h5 id="productModalLabel" class="modal-title">
-            <span>編輯產品</span>
+            <span>{{ modalOriginData === "" ? "新增產品" : "編輯產品" }}</span>
           </h5>
           <button
             type="button"
@@ -156,21 +209,41 @@ watch(modalTarget, () => {
               </div>
               <div v-if="imageOnChange != ''">
                 <button
-                  @click.prevent="imageOnChange = ''"
-                  class="btn btn-outline-danger btn-sm d-block w-100"
+                  @click.prevent="changeImage('')"
+                  class="btn btn-outline-danger btn-sm d-block w-100 mb-2"
                 >
                   取消
                 </button>
               </div>
-              <div class="mt-3" v-if="modalTarget != ''">
+              <div>
+                <label
+                  class="imageUploadBtn d-flex flex-column align-items-center rounded p-3"
+                  for="imageUpload"
+                >
+                  <input
+                    @change="uploadImage()"
+                    type="file"
+                    id="imageUpload"
+                    name="file-to-upload"
+                    class="d-none"
+                    formenctype="multipart/form-data"
+                    accept=".jpg, .jpeg, .png"
+                  />
+                  <font-awesome-icon icon="fa-regular fa-image" class="fs-2" />
+                  <span class="fs-6 text-dark">上傳圖片</span>
+                </label>
+              </div>
+              <div class="mt-3" v-if="modalTarget.imageUrl">
                 <span>圖片列表</span>
                 <div>
                   <button
+                    @click.prevent="changeImage(modalTarget.imageUrl)"
                     class="btn btn-outline-success d-block w-100 btn-sm mb-1"
                   >
                     主要圖片
                   </button>
                   <button
+                    @click.prevent="changeImage(img)"
                     v-for="img in modalTarget.imagesUrl"
                     :key="modalTarget.imagesUrl.indexOf(img)"
                     class="btn btn-outline-success d-block w-100 btn-sm mb-1"
@@ -238,9 +311,23 @@ watch(modalTarget, () => {
                     placeholder="請輸入售價"
                   />
                 </div>
+                <div class="mb-3 col-md-6">
+                  <label for="rate" class="form-label">星數</label>
+                  <select
+                    v-model="modalTarget.rate"
+                    id="rate"
+                    class="form-control"
+                  >
+                    <option value="">請選擇星數</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                  </select>
+                </div>
               </div>
               <hr />
-
               <div class="mb-3">
                 <label for="description" class="form-label">產品描述</label>
                 <textarea
@@ -290,8 +377,15 @@ watch(modalTarget, () => {
             取消
           </button>
           <button
+            v-if="modalOriginData === ''"
+            @click.prevent="addGoodsPost()"
+            class="btn btn-primary"
+          >
+            確認
+          </button>
+          <button
+            v-else
             @click.prevent="editGoodsPut()"
-            type="button"
             class="btn btn-primary"
           >
             確認
@@ -302,4 +396,11 @@ watch(modalTarget, () => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.imageUploadBtn {
+  border: 2px;
+  border-radius: 12px;
+  border-style: dashed;
+  border-color: lightgray;
+}
+</style>
