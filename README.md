@@ -7,13 +7,13 @@
 # 複製專案
 
 ```bash
-git clone git@github.com:Brook072/2022VueTrainingWeek3
+git clone git@github.com:Brook072/2022VueTrainingWeek4
 ```
 
 # 移動至專案
 
 ```bash
-cd 2022VueTrainingWeek3
+cd 2022VueTrainingWeek4
 ```
 
 # 安裝專案
